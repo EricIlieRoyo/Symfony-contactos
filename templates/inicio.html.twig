@@ -1,9 +1,31 @@
 {% extends 'base.html.twig' %}
+{% block title %}Inicio - Lista de Contactos{% endblock %}
+
 {% block body %}
-	<h1>Contactos</h1>
-	<h2>Bienvenido a la web de contactos.</h2>
-	<p>Página de inicio</p>
-	{% for contacto in contactos %}
-		 {{ include ('partials/_contacto.html.twig', {'contacto': contacto})}}
-	{% endfor %}
+<div class="container mt-4">
+	<h1 class="mb-3">Contactos</h1>
+	<p class="lead">Bienvenido a la web de contactos.</p>
+
+	<div class="mb-3">
+		<a href="{{ path('nuevo') }}" class="btn btn-success">+ Nuevo contacto</a>
+	</div>
+
+	{% if contactos is not empty %}
+		<ul class="list-group">
+			{% for contacto in contactos %}
+				<li class="list-group-item d-flex justify-content-between align-items-center">
+					<a href="{{ path('contacto', {'codigo': contacto.id}) }}" class="fw-bold text-decoration-none text-primary fs-5">
+						{{ contacto.nombre }}
+					</a>
+					<div>
+						<a href="{{ path('contacto', {'codigo': contacto.id}) }}" class="btn btn-sm btn-outline-primary me-2">Ver Detalles</a>
+						<a href="{{ path('editar', {'codigo': contacto.id}) }}" class="btn btn-sm btn-outline-secondary">Editar / Modificar</a>
+					</div>
+				</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<div class="alert alert-info">No hay contactos guardados en la base de datos.</div>
+	{% endif %}
+</div>
 {% endblock %}
