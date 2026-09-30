@@ -23,9 +23,11 @@ final class PageController extends AbstractController
     #[Route('/', name: 'inicio')]
     #[Route('/index', name: 'index')]
     public function inicio(ManagerRegistry $doctrine): Response
-    {
-        $repositorio = $doctrine->getRepository(Contacto::class);
-        $contactos = $repositorio->findAll();
-        return $this->render("inicio.html.twig", ["contactos" => $contactos]);
-    }
+{
+    $repositorio = $doctrine->getRepository(Contacto::class);
+    // findAll es un método que se encuentra en el repositorio
+    $contactos = $repositorio->findAll();
+    //Mostramos la plantilla pasándole los contactos
+    return $this->render("inicio.html.twig", ["contactos" => $contactos]);
+}
 }

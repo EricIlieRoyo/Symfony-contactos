@@ -9,62 +9,51 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Form\ContactoFormType;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 final class ContactoController extends AbstractController
 {
     #[Route('/contacto/{codigo}', name: 'contacto', requirements: ['codigo' => '[0-9]+'])]
-    public function ficha(ManagerRegistry $doctrine, Request $request, int $codigo = 1): Response
+    public function ficha(ManagerRegistry $doctrine, int $codigo = 1): Response
     {
+        // La primera instrucción suele ser esta, ya que cogemos el repositorio de la entidad asociada
         $repositorio = $doctrine->getRepository(Contacto::class);
+        // Ahora usamos uno de los métodos del repositorio
         $contacto = $repositorio->find($codigo);
         
-        if ($contacto) {
-            $formulario = $this->createForm(ContactoFormType::class, $contacto);
-            $formulario->handleRequest($request);
-
-            if ($formulario->isSubmitted() && $formulario->isValid()) {
-                // Comprobar que el usuario está logeado para guardar o borrar
-                if (!$this->getUser()) {
-                    return $this->redirectToRoute('index');
-                }
-
-                $entityManager = $doctrine->getManager();
-
-                // Comprobar si el usuario pulsó en Borrar
-                if ($formulario->get('delete')->isClicked()) {
-                    $entityManager->remove($contacto);
-                    $entityManager->flush();
-                    return $this->redirectToRoute('index');
-                }
-
-                // Comprobar si el usuario pulsó en Guardar/Modificar
-                if ($formulario->get('save')->isClicked()) {
-                    $contacto = $formulario->getData();
-                    $entityManager->persist($contacto);
-                    $entityManager->flush();
-                    return $this->redirectToRoute('contacto', ["codigo" => $contacto->getId()]);
-                }
-            }
-
-            return $this->render('ficha.html.twig', [
-                "contacto" => $contacto,
-                "formulario" => $formulario->createView()
-            ]);
-        }
-
-        return $this->render('ficha.html.twig', [
-            "contacto" => null
+        return $this->render('ficha.html.twig',[
+            "contacto" => $contacto
         ]);
     }
+// #[Route('/contacto/nuevo/{nombre}/{telefono}/{email}', name: 'nuevo-con-datos')]
+// public function nuevoContacto(
+//     ManagerRegistry $doctrine,
+//     string $nombre,
+//     string $telefono,
+//     string $email,
+// ){
+//     $contacto = new Contacto();
+//     $contacto->setNombre($nombre);
+//     $contacto->setTelefono($telefono);
+//     $contacto->setEmail($email);
+//     
+//     // guardamos el objeto
+//     $entityManager = $doctrine->getManager();
+//     $entityManager->persist($contacto);
+//     $entityManager->flush();
 
+//     //volvemos a la ficha del nuevo contacto
+//     return $this->redirectToRoute('contacto',[
+//         "codigo" => $contacto->getId()
+//     ]);
+//     
+// }
     #[Route('/contacto/modificar/{codigo}/{nombre_nuevo}', name: 'cambiar-nombre')]
-    public function modificar(ManagerRegistry $doctrine, int $codigo, string $nombre_nuevo): Response
+    public function modificar(ManagerRegistry $doctrine, int $codigo, string $nombre_nuevo)
     {
-        // Comprobar que el usuario está logeado
         if (!$this->getUser()) {
-            return $this->redirectToRoute('index');
+            return $this->redirect('/index');
         }
-
         $contacto = $doctrine->getRepository(Contacto::class)->find($codigo);
         if ($contacto){
             $contacto->setNombre($nombre_nuevo);
@@ -82,23 +71,21 @@ final class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/borrar/{codigo}', name: 'borrar')]
-    public function borrar(ManagerRegistry $doctrine, int $codigo): Response
+    public function borrar(ManagerRegistry $doctrine, int $codigo)
     {
-        // Comprobar que el usuario está logeado
         if (!$this->getUser()) {
-            return $this->redirectToRoute('index');
+            return $this->redirect('/index');
         }
-
         $contacto = $doctrine->getRepository(Contacto::class)->find($codigo);
         if ($contacto){
             $entityManager = $doctrine->getManager();
             try{
                 $entityManager->remove($contacto);
                 $entityManager->flush();
-                return $this->redirectToRoute('index');
+                return $this->redirectToRoute('inicio');
             }catch (\Exception $e){
-                error_log("Error borrando objeto " . $e->getMessage());
-                return new Response("Error borrando objeto " . $e->getMessage());
+                error_log("Error insertando objeto " . $e->getMessage());
+                return new Response("Error insertando objeto " . $e->getMessage());
             }
         }else{
             return new Response("No se ha encontrado el contacto");
@@ -106,68 +93,62 @@ final class ContactoController extends AbstractController
     }
 
     #[Route('/contacto/nuevo', name: 'nuevo')]
-    public function nuevo(ManagerRegistry $doctrine, Request $request): Response
+    public function nuevo(ManagerRegistry $doctrine, Request $request)
     {
-        // Comprobar que el usuario está logeado
         if (!$this->getUser()) {
-            return $this->redirectToRoute('index');
+            return $this->redirect('/index');
         }
-
         $contacto = new Contacto();
         $formulario = $this->createForm(ContactoFormType::class, $contacto);
         $formulario->handleRequest($request);
 
         if ($formulario->isSubmitted() && $formulario->isValid()) {
-            if ($formulario->get('delete')->isClicked()) {
-                return $this->redirectToRoute('index');
+            if ($formulario->has('borrar') && $formulario->get('borrar')->isClicked()) {
+                return $this->redirectToRoute('inicio');
             }
-
-            if ($formulario->get('save')->isClicked()) {
-                $contacto = $formulario->getData();
-                $entityManager = $doctrine->getManager();
-                $entityManager->persist($contacto);
-                $entityManager->flush();
-                return $this->redirectToRoute('contacto', ["codigo" => $contacto->getId()]);
-            }
+            $contacto = $formulario->getData();
+            $entityManager = $doctrine->getManager();
+            $entityManager->persist($contacto);
+            $entityManager->flush();
+            return $this->redirectToRoute('contacto', ["codigo" => $contacto->getId()]);
         }
-
         return $this->render('nuevo.html.twig', array('formulario' => $formulario->createView()));
     }
 
-    #[Route('/contacto/editar/{codigo}', name: 'editar', requirements: ["codigo" => "\d+"])]
-    public function editar(ManagerRegistry $doctrine, Request $request, int $codigo): Response
-    {
-        // Comprobar que el usuario está logeado
+    #[Route('/contacto/editar/{codigo}', name: 'editar', requirements:["codigo"=>"\d+"])]
+    public function editar(ManagerRegistry $doctrine, Request $request, int $codigo) {
         if (!$this->getUser()) {
-            return $this->redirectToRoute('index');
+            return $this->redirect('/index');
         }
-
         $repositorio = $doctrine->getRepository(Contacto::class);
+        //En este caso, los datos los obtenemos del repositorio de contactos
         $contacto = $repositorio->find($codigo);
         if ($contacto){
+            // A partir de $contacto, rellena automáticamente el formulario
             $formulario = $this->createForm(ContactoFormType::class, $contacto);
+
             $formulario->handleRequest($request);
 
             if ($formulario->isSubmitted() && $formulario->isValid()) {
                 $entityManager = $doctrine->getManager();
 
-                if ($formulario->get('delete')->isClicked()) {
+                // Comprobamos si el usuario ha pulsado el botón de borrar
+                if ($formulario->has('borrar') && $formulario->get('borrar')->isClicked()) {
                     $entityManager->remove($contacto);
                     $entityManager->flush();
-                    return $this->redirectToRoute('index');
+                    return $this->redirectToRoute('inicio');
                 }
 
-                if ($formulario->get('save')->isClicked()) {
-                    $contacto = $formulario->getData();
-                    $entityManager->persist($contacto);
-                    $entityManager->flush();
-                    return $this->redirectToRoute('contacto', ["codigo" => $contacto->getId()]);
-                }
+                // Si ha pulsado en guardar (o editar)
+                $contacto = $formulario->getData();
+                $entityManager->persist($contacto);
+                $entityManager->flush();
+                return $this->redirectToRoute('contacto', ["codigo" => $contacto->getId()]);
             }
 
+            // Ponemos los datos del contacto
             return $this->render('editar.html.twig', array(
-                'formulario' => $formulario->createView(),
-                'contacto' => $contacto
+                'formulario' => $formulario->createView()
             ));
         }else{
             return $this->render('ficha.html.twig', [

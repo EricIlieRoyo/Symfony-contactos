@@ -24,14 +24,9 @@ class ContactoFormType extends AbstractType
                 'choice_label' => 'nombre',
                 'label' => 'Provincia',
             ])
-            ->add('save', SubmitType::class, [
-                'label' => 'Guardar / Modificar',
-                'attr' => ['class' => 'btn btn-primary me-2']
-            ])
-            ->add('delete', SubmitType::class, [
-                'label' => 'Borrar',
-                'attr' => ['class' => 'btn btn-danger']
-            ]);
+            ->add('save', SubmitType::class, array('label' => 'Guardar'))
+            ->add('borrar', SubmitType::class, array('label' => 'Borrar'));
+        ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void

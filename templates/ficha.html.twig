@@ -1,42 +1,11 @@
 {% extends "base.html.twig" %}
-{% block title %}Ficha de contacto{% endblock %}
-
+{% block title %}Ficha de contacto
+{% endblock %}
 {% block body %}
-<div class="container mt-4">
-    {% if contacto %}
-        <h1 class="mb-3">Ficha del contacto: {{ contacto.nombre }}</h1>
-
-        <div class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Detalles del contacto</h5>
-            </div>
-            <div class="card-body">
-                {% include "partials/_contacto.html.twig" with {"contacto": contacto} %}
-            </div>
-        </div>
-
-        {% if formulario is defined and formulario is not null %}
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Modificar o Borrar este contacto</h5>
-                </div>
-                <div class="card-body">
-                    {{ form_start(formulario) }}
-                        {{ form_widget(formulario) }}
-                    {{ form_end(formulario) }}
-                </div>
-            </div>
-        {% endif %}
-
-        <div>
-            <a href="{{ path('inicio') }}" class="btn btn-secondary">← Volver al inicio</a>
-        </div>
-    {% else %}
-        <div class="alert alert-warning">
-            <h4>Contacto no encontrado</h4>
-            <p>El contacto solicitado no existe o fue eliminado.</p>
-            <a href="{{ path('inicio') }}" class="btn btn-primary">Volver a la portada</a>
-        </div>
-    {% endif %}
-</div>
+    {%if contacto%}
+    <h1>Ficha del contacto</h1>
+    {%include "partials/_contacto.html.twig" with {"contacto" : contacto}%}
+    {%else%}
+    <p>No se ha encontrado el contacto</p>
+    {%endif%}
 {% endblock %}
